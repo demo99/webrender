@@ -1790,11 +1790,6 @@ impl RenderPass {
                             // See if this task is a duplicate.
                             // If so, just skip adding it!
                             if let Some(task_info) = self.dynamic_tasks.get(&cache_key) {
-                                // TODO(gw): We can easily handle invalidation of tasks that
-                                // contain children in the future. Since we don't
-                                // have any cases of that yet, just assert to simplify
-                                // the current implementation.
-                                debug_assert!(task.children.is_empty());
                                 debug_assert_eq!(task_info.rect.size, size);
                                 task.kind = RenderTaskKind::Alias(task_info.task_id);
                                 continue;
