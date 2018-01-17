@@ -64,6 +64,7 @@ impl FrameBuilder {
         if color.a == 0.0 {
             return;
         }
+        let local_clip = *prim_info.local_clip.clip_rect();
 
         let (spread_amount, brush_clip_mode) = match clip_mode {
             BoxShadowClipMode::Outset => {
@@ -98,10 +99,14 @@ impl FrameBuilder {
                         ClipMode::ClipOut
                     ));
 
+                    let local_clip = local_clip.intersection(&shadow_rect);
+                    if local_clip.is_none() {
+                        return;
+                    }
                     LayerPrimitiveInfo::with_clip(
                         shadow_rect,
                         LocalClip::RoundedRect(
-                            shadow_rect,
+                            local_clip.unwrap(),
                             ComplexClipRegion::new(
                                 shadow_rect,
                                 shadow_radius,
@@ -117,10 +122,14 @@ impl FrameBuilder {
                         ClipMode::ClipOut
                     ));
 
+                    let local_clip = local_clip.intersection(&prim_info.rect);
+                    if local_clip.is_none() {
+                        return;
+                    }
                     LayerPrimitiveInfo::with_clip(
                         prim_info.rect,
                         LocalClip::RoundedRect(
-                            prim_info.rect,
+                            local_clip.unwrap(),
                             ComplexClipRegion::new(
                                 prim_info.rect,
                                 border_radius,
@@ -268,7 +277,10 @@ impl FrameBuilder {
                         ClipMode::ClipOut,
                     ));
 
-                    let pic_info = LayerPrimitiveInfo::new(pic_rect);
+                    let pic_info = LayerPrimitiveInfo::with_clip_rect(
+                        pic_rect,
+                        local_clip
+                    );
                     self.add_primitive(
                         clip_and_scroll,
                         &pic_info,
@@ -335,6 +347,11 @@ impl FrameBuilder {
                         clip_and_scroll
                     );
 
+                    let local_clip = local_clip.intersection(&prim_info.rect);
+                    if local_clip.is_none() {
+                        return;
+                    }
+
                     // Draw the picture one pixel outside the original
                     // rect to account for the inflate above. This
                     // extra edge will be clipped by the local clip
@@ -342,7 +359,7 @@ impl FrameBuilder {
                     let pic_rect = prim_info.rect.inflate(inflate_size + box_offset.x.abs(), inflate_size + box_offset.y.abs());
                     let pic_info = LayerPrimitiveInfo::with_clip_rect(
                         pic_rect,
-                        prim_info.rect
+                        local_clip.unwrap()
                     );
 
                     // Add a normal clip to ensure nothing gets drawn
